@@ -1,7 +1,7 @@
-import { View, Text, Button, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { ActivityIndicator, Button, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 export default function Home() {
   const [categories, setCategories] = useState<string[]>([]);
@@ -15,6 +15,7 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+  console.log(categories);
 
   return (
     <View style={styles.container}>
@@ -33,16 +34,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 16 
-  },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 12 
-  },
-  button: { 
-    marginVertical: 8 
-  }
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
+  button: { marginVertical: 8 }
 });
