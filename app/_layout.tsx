@@ -1,48 +1,42 @@
-import { View, Text, Button, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { Stack } from "expo-router";
+import { StyleSheet } from "react-native";
 
-export default function Home() {
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+type RootStackParamList = {
+  index: undefined;
+  "products/[category]": { category: string };
+  "product/[id]": { id: string };
+};
 
-  useEffect(() => {
-    axios.get('https://fakestoreapi.com/products/categories')
-      .then(res => {
-        setCategories(res.data);
-        setLoading(false);
-      });
-  }, []);
-
+export default function Layout() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Product Categories</Text>
-      {loading ? <ActivityIndicator size="large" color="blue" /> : (
-        <ScrollView>
-          {categories.map((cat, idx) => (
-            <View style={styles.button} key={idx}>
-              <Button title={cat} onPress={() => router.push(`/products/${cat}`)} />
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#07689c",
+        },
+        headerTintColor: "#fff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+        headerTitleAlign: "center",
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: "Product Categories" }} />
+      <Stack.Screen
+        name="products/[category]"
+        options={({ route }) => ({
+          title: (route.params as { category: string })?.category,
+        })}
+      />
+      <Stack.Screen
+        name="product/[id]"
+        options={({ route }) => ({
+          title: `Product Details`,
+        })}
+      />
+    </Stack>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 16 
-  },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    marginBottom: 12 
-  },
-  button: { 
-    marginVertical: 8 
-  }
-});
+const styles = StyleSheet.create({});
