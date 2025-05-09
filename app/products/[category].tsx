@@ -41,7 +41,7 @@ export default function ProductList() {
         renderItem={({ item }) => (
           <ProductCard
             product={item}
-            onPress={() => router.push(`/product/${item.id}`)}
+            onPress={() => router.push(`../product/${item.id}`)}
           />
         )}
       />

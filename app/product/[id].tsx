@@ -1,36 +1,26 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../../redux/slices/cartSlices"; // Adjust path if needed
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [product, setProduct] = useState<any>(null);
   const router = useRouter();
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    axios
-      .get(`https://fakestoreapi.com/products/${id}`)
-      .then((res) => setProduct(res.data));
+    axios.get(`https://fakestoreapi.com/products/${id}`).then((res) => setProduct(res.data));
   }, []);
 
   if (!product)
-    return (
-      <ActivityIndicator style={{ flex: 1 }} size="large" color="#07689c" />
-    );
+    return <ActivityIndicator style={{ flex: 1 }} size="large" color="#07689c" />;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Image source={{ uri: product.image }} style={styles.image} />
-
       <Text style={styles.title}>{product.title}</Text>
 
       <View style={styles.infoRow}>
@@ -40,13 +30,23 @@ export default function ProductDetail() {
       </View>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.buttonText}>← Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cartButton}>
+        <TouchableOpacity
+          style={styles.cartButton}
+          onPress={() => {
+            dispatch(
+              addToCart({
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                image: product.image,
+                quantity: 1,
+              })
+            );
+          }}
+        >
           <Text style={styles.buttonText}>🛒 Add to Cart</Text>
         </TouchableOpacity>
       </View>

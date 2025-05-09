@@ -1,42 +1,31 @@
 import { Stack } from "expo-router";
-import { StyleSheet } from "react-native";
+import { Provider } from "react-redux";
+import { store } from "../redux/store";
 
-type RootStackParamList = {
-  index: undefined;
-  "products/[category]": { category: string };
-  "product/[id]": { id: string };
-};
-
-export default function Layout() {
+export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: "#07689c",
-        },
-        headerTintColor: "#fff",
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-        headerTitleAlign: "center",
-        headerShadowVisible: false,
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: "Product Categories" }} />
-      <Stack.Screen
-        name="products/[category]"
-        options={({ route }) => ({
-          title: (route.params as { category: string })?.category,
-        })}
-      />
-      <Stack.Screen
-        name="product/[id]"
-        options={({ route }) => ({
-          title: `Product Details`,
-        })}
-      />
-    </Stack>
+    <Provider store={store}>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: "#07689c" },
+          headerTintColor: "#fff",
+          headerTitleStyle: { fontWeight: "bold" },
+          headerTitleAlign: "center",
+          headerShadowVisible: false,
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: "Product Categories" }} />
+        <Stack.Screen
+          name="products/[category]"
+          options={({ route }) => ({
+            title: (route.params as { category: string })?.category,
+          })}
+        />
+        <Stack.Screen
+          name="product/[id]"
+          options={{ title: "Product Details" }}
+        />
+      </Stack>
+    </Provider>
   );
 }
-
-const styles = StyleSheet.create({});
