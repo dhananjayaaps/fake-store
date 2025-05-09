@@ -36,15 +36,12 @@ export default function ProductDetail() {
         <TouchableOpacity
           style={styles.cartButton}
           onPress={() => {
-            dispatch(
-              addToCart({
-                id: product.id,
-                title: product.title,
-                price: product.price,
-                image: product.image,
-                quantity: 1,
-              })
-            );
+            dispatch(addToCart({
+              id: product.id,
+              title: product.title,
+              price: product.price,
+              image: product.image,
+            }));
           }}
         >
           <Text style={styles.buttonText}>🛒 Add to Cart</Text>
