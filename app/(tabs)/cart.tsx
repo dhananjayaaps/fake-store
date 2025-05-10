@@ -1,7 +1,7 @@
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
-import { incrementQuantity, decrementQuantity } from "../../redux/slices/cartSlices";
+import { incrementQuantity, decrementQuantity, clearCart } from "../../redux/slices/cartSlices";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CartScreen() {
@@ -42,6 +42,18 @@ export default function CartScreen() {
                     contentContainerStyle={{ paddingVertical: 12 }}
                 />
             </View>
+            <View style={{ height: 1, backgroundColor: "#e0e0e0", marginVertical: 16 }} />
+            <TouchableOpacity
+                style={styles.checkoutbtn}
+                onPress={() => {
+                    dispatch(clearCart()); // Clear the cart
+                    alert("Checkout complete!");
+                }}
+                >
+                <Text style={{ color: "#fff", textAlign: "center", fontSize: 18 }}>
+                    Checkout
+                </Text>
+            </TouchableOpacity>
         </SafeAreaView>
     );
 }
@@ -66,6 +78,9 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         color: "#07689c",
         textAlign: "center",
+        backgroundColor: "#42ecf5",
+        borderRadius: 12,
+        padding: 16,
     },
     card: {
         flexDirection: "row",
@@ -125,5 +140,24 @@ const styles = StyleSheet.create({
         marginHorizontal: 12,
         fontSize: 16,
         fontWeight: "500",
+    },
+    checkoutbtn: {
+        backgroundColor: "#007AFF",
+        paddingVertical: 10,
+        borderRadius: 8,
+        width: "50%",
+        marginTop: 5,
+        alignSelf: "center",
+    },
+    topbox: {
+        backgroundColor: "#f9f9f9",
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 3,
     },
 });
