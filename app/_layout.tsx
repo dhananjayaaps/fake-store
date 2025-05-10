@@ -1,20 +1,13 @@
-import { Stack } from "expo-router";
+import { Slot } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "../redux/store";
+import { Stack } from 'expo-router';
 
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: "#07689c" },
-          headerTintColor: "#fff",
-          headerTitleStyle: { fontWeight: "bold" },
-          headerTitleAlign: "center",
-          headerShadowVisible: false,
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: "Product Categories" }} />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="products/[category]"
           options={({ route }) => ({
@@ -23,9 +16,13 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="product/[id]"
-          options={{ title: "Product Details" }}
+          options={({ route }) => ({
+            title: `Product Details`,
+          })}
         />
       </Stack>
     </Provider>
   );
 }
+
+
