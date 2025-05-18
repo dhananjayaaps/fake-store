@@ -2,8 +2,25 @@ import { Slot } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "../redux/store";
 import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import SplashScreen from './splash'; // Import your SplashScreen component
 
 export default function RootLayout() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // 3 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <SplashScreen />;
+  }
+
   return (
     <Provider store={store}>
       <Stack>
@@ -24,5 +41,3 @@ export default function RootLayout() {
     </Provider>
   );
 }
-
-
