@@ -1,5 +1,5 @@
-import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Tabs, useRouter } from "expo-router";
+import { Text, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
@@ -7,6 +7,16 @@ import { RootState } from "../../redux/store";
 export default function TabsLayout() {
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const router = useRouter();
+
+  // Function to handle restricted tab access
+  const handleProtectedTab = (e: any, routeName: string) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      Alert.alert("Login Required", `Please sign in to access ${routeName}.`);
+    }
+  };
 
   return (
     <Tabs
@@ -22,7 +32,7 @@ export default function TabsLayout() {
           fontSize: 12,
         },
         headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           let iconName = "home";
 
           switch (route.name) {
@@ -67,9 +77,27 @@ export default function TabsLayout() {
       })}
     >
       <Tabs.Screen name="index" options={{ title: "Home" }} />
-      <Tabs.Screen name="cart" options={{ title: "Cart" }} />
-      <Tabs.Screen name="orders" options={{ title: "Orders" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen
+        name="cart"
+        options={{ title: "Cart" }}
+        listeners={{
+          tabPress: (e) => handleProtectedTab(e, "Cart"),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{ title: "Orders" }}
+        listeners={{
+          tabPress: (e) => handleProtectedTab(e, "Orders"),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ title: "Profile" }}
+        listeners={{
+          tabPress: (e) => handleProtectedTab(e, "Profile"),
+        }}
+      />
     </Tabs>
   );
 }
