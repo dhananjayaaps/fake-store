@@ -34,12 +34,14 @@ export default function AuthScreen() {
       }
 
       dispatch(setAuthenticated(true));
-      router.replace("./(tabs)");
+      router.replace("/(tabs)/profile");
+
     } catch (err: any) {
       alert(err.message || "Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
+
   };
 
   if (isLoading) {

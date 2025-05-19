@@ -10,11 +10,21 @@ export default function TabsLayout() {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const router = useRouter();
 
-  // Function to handle restricted tab access
   const handleProtectedTab = (e: any, routeName: string) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      Alert.alert("Login Required", `Please sign in to access ${routeName}.`);
+      Alert.alert(
+        "Login Required",
+        `Please sign in to access ${routeName}.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign In",
+            onPress: () => router.push("../auth"),
+          },
+        ],
+        { cancelable: true }
+      );
     }
   };
 
