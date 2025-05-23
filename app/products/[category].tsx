@@ -3,12 +3,14 @@ import {
   FlatList,
   ActivityIndicator,
   StyleSheet,
-  Text,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import ProductCard from "../../components/ProductCard";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
 
 export default function ProductList() {
   const { category } = useLocalSearchParams<{ category: string }>();
@@ -16,14 +18,41 @@ export default function ProductList() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
+
   useEffect(() => {
     axios
       .get(`https://fakestoreapi.com/products/category/${category}`)
       .then((res) => {
         setProducts(res.data);
         setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch products", err);
+        setLoading(false);
       });
-  }, []);
+  }, [category]);
+
+  const handleProtectedPress = (productId: number) => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        "Login Required",
+        "Please sign in to view product details.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign In",
+            onPress: () => router.push("/auth"),
+          },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      router.push(`../product/${productId}`);
+    }
+  };
 
   if (loading)
     return (
@@ -41,7 +70,7 @@ export default function ProductList() {
         renderItem={({ item }) => (
           <ProductCard
             product={item}
-            onPress={() => router.push(`../product/${item.id}`)}
+            onPress={() => handleProtectedPress(item.id)}
           />
         )}
       />
@@ -52,25 +81,15 @@ export default function ProductList() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    backgroundColor: "#fff",
+  },
+  list: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
-  },
-  heading: {
-    color: "#333333",
-    fontSize: 22,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 16,
-    letterSpacing: 1.2,
-  },
-  list: {
-    paddingBottom: 20,
   },
 });

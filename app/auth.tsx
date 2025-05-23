@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { useDispatch } from "react-redux";
 import { setAuthenticated } from "../redux/slices/authSlice";
 import { useRouter } from "expo-router";
@@ -41,7 +49,12 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
 
+  const handleSignInLater = () => {
+    // Optional: You can dispatch an unauthenticated state or guest mode
+    dispatch(setAuthenticated(false)); // Optional if your logic supports it
+    router.replace("/(tabs)");
   };
 
   if (isLoading) {
@@ -97,70 +110,73 @@ export default function AuthScreen() {
             : "Don't have an account? Sign Up"}
         </Text>
       </TouchableOpacity>
+
+      {/* 👇 New Sign In Later button */}
+      <TouchableOpacity style={styles.skipButton} onPress={handleSignInLater}>
+        <Text style={styles.skipText}>Sign In Later</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    alignItems: "center",
-    backgroundColor: "#f4faff",
     flexGrow: 1,
     justifyContent: "center",
+    padding: 24,
+    backgroundColor: "#fff",
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    marginVertical: 20,
+    color: "#07689c",
+    marginBottom: 24,
     textAlign: "center",
-    color: "#333",
   },
   input: {
-    width: "100%",
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+    borderColor: "#ccc",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
     fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#333",
   },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
-    marginTop: 8,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   primaryButton: {
     backgroundColor: "#07689c",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 8,
     flex: 1,
-    marginLeft: 8,
-    alignItems: "center",
+    marginLeft: 6,
   },
   secondaryButton: {
-    backgroundColor: "#b0bec5",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
+    backgroundColor: "#aaa",
+    padding: 12,
+    borderRadius: 8,
     flex: 1,
-    marginRight: 8,
-    alignItems: "center",
+    marginRight: 6,
   },
   buttonText: {
-    fontWeight: "bold",
     color: "#fff",
-    fontSize: 16,
+    textAlign: "center",
+    fontWeight: "600",
   },
   toggleText: {
+    marginTop: 16,
     textAlign: "center",
     color: "#07689c",
-    marginTop: 16,
-    fontWeight: "bold",
+    textDecorationLine: "underline",
+  },
+  skipButton: {
+    marginTop: 20,
+    alignSelf: "center",
+  },
+  skipText: {
+    color: "gray",
+    fontStyle: "italic",
   },
 });
