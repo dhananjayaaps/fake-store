@@ -1,13 +1,38 @@
-import { Tabs, useRouter } from "expo-router";
-import { Text, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Tabs, useRouter } from "expo-router";
+import { Alert, StyleSheet, Text } from "react-native";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
+
+const styles = StyleSheet.create({
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -12,
+    backgroundColor: "red",
+    color: "#fff",
+    fontSize: 10,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+    minWidth: 16,
+    textAlign: "center",
+  },
+});
 
 export default function TabsLayout() {
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  const newOrderCount = useSelector(
+    (state: RootState) => state.orders.newOrderCount
+  );
+
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
+
   const router = useRouter();
 
   const handleProtectedTab = (e: any, routeName: string) => {
@@ -64,21 +89,15 @@ export default function TabsLayout() {
             <>
               <Ionicons name={iconName as any} size={22} color={color} />
               {route.name === "cart" && totalCount > 0 && (
-                <Text
-                  style={{
-                    position: "absolute",
-                    top: -4,
-                    right: -12,
-                    backgroundColor: "red",
-                    color: "#fff",
-                    fontSize: 10,
-                    paddingHorizontal: 4,
-                    paddingVertical: 1,
-                    borderRadius: 8,
-                    overflow: "hidden",
-                  }}
-                >
+                <Text style={[styles.badge, { right: -12 }]}>
                   {totalCount}
+                </Text>
+              )}
+              {route.name === "orders" && newOrderCount > 0 && (
+                <Text
+                  style={[styles.badge, { right: -14, backgroundColor: "#007AFF" }]}
+                >
+                  {newOrderCount}
                 </Text>
               )}
             </>

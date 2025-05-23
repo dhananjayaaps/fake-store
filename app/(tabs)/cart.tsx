@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { incrementQuantity, decrementQuantity, clearCart } from "../../redux/slices/cartSlices";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { addOrder } from "../../redux/slices/orderSlice";
 
 export default function CartScreen() {
     const dispatch = useDispatch();
@@ -46,10 +47,15 @@ export default function CartScreen() {
             <TouchableOpacity
                 style={styles.checkoutbtn}
                 onPress={() => {
-                    dispatch(clearCart()); // Clear the cart
-                    alert("Checkout complete!");
+                    if (cartItems.length === 0) {
+                        alert("Your cart is empty.");
+                        return;
+                    }
+                    dispatch(addOrder({ items: cartItems }));
+                    dispatch(clearCart());
+                    alert("Order placed successfully!");
                 }}
-                >
+            >
                 <Text style={{ color: "#fff", textAlign: "center", fontSize: 18 }}>
                     Checkout
                 </Text>
@@ -60,9 +66,9 @@ export default function CartScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        backgroundColor: "#ffffff",
         padding: 16,
+        backgroundColor: "#fff",
+        flex: 1,
     },
     title: {
         fontSize: 28,
