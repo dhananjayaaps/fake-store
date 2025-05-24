@@ -10,35 +10,15 @@ const userSchema = new schema({
         type:String,
         required:true
     },
-    username:{
-        type:String,
-        required:true
-    },
+
     password:{
         type:String,
         required:true
     },
     name:{
-        firstname:{
-            type:String,
-            required:true
-        },
-        lastname:{
-            type:String,
-            required:true
-        }
-    },
-    address:{
-        city:String,
-        street:String,
-        number:Number,
-        zipcode:String,
-        geolocation:{
-            lat:String,
-            long:String
-        }
-    },
-    phone:String
+        type:String,
+        required:true
+    }
 })
 
 module.exports = mongoose.model('user',userSchema)

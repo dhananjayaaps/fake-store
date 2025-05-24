@@ -1,26 +1,35 @@
 const User = require('../model/user');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
-module.exports.login = (req, res) => {
-	const username = req.body.username;
-	const password = req.body.password;
-	if (username && password) {
-		User.findOne({
-			username: username,
-			password: password,
-		})
-			.then((user) => {
-				if (user) {
-					res.json({
-						token: jwt.sign({ user: username }, 'secret_key'),
-					});
-				} else {
-					res.status(401);
-					res.send('username or password is incorrect');
-				}
-			})
-			.catch((err) => {
-				console.error(err);
-			});
+module.exports.login = async (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ message: 'Email and password are required' });
+	}
+
+	try {
+		const user = await User.findOne({ email });
+
+		if (!user) {
+			return res.status(401).json({ message: 'Invalid email or password' });
+		}
+
+		const isPasswordValid = await bcrypt.compare(password, user.password);
+		if (!isPasswordValid) {
+			return res.status(401).json({ message: 'Invalid email or password' });
+		}
+
+		const token = jwt.sign(
+			{ userId: user.id, email: user.email },
+			'secret_key',
+			{ expiresIn: '1h' }
+		);
+
+		res.json({ token });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ message: 'Internal server error' });
 	}
 };
