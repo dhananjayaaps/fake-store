@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Interfaces
 interface Product {
   id: string | number;
   title: string;
@@ -23,47 +24,69 @@ interface CartState {
   error: string | null;
 }
 
+// Initial State
 const initialState: CartState = {
   items: [],
   status: 'idle',
-  error: null
+  error: null,
 };
 
+// Async Thunks
 export const fetchCart = createAsyncThunk('cart/fetchCart', async () => {
   const token = await AsyncStorage.getItem("userToken");
   const response = await axios.get('http://10.0.2.2:4001/carts/user', {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 });
+
+export const updateCartItem = createAsyncThunk(
+  'cart/updateCartItem',
+  async ({ itemId, quantity }: { itemId: string; quantity: number }, { getState }) => {
+    const state = getState() as { cart: CartState };
+    const token = await AsyncStorage.getItem("userToken");
+    const item = state.cart.items.find(i => i.id === itemId);
+
+    if (!item) throw new Error('Item not found in cart');
+
+    const response = await axios.put(
+      `http://10.0.2.2:4001/carts/items/${item.product.id}`,
+      { quantity },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return response.data;
+  }
+);
 
 export const syncCart = createAsyncThunk('cart/syncCart', async (_, { getState }) => {
   const state = getState() as { cart: CartState };
   const token = await AsyncStorage.getItem("userToken");
-  
-  const response = await axios.post('http://10.0.2.2:4001/carts', {
-    products: state.cart.items.map(item => ({
-      product: {
-        id: item.product.id,
-        title: item.product.title,
-        price: item.product.price,
-        image: item.product.image,
-        description: item.product.description || "",
-        category: item.product.category || ""
-      },
-      quantity: item.quantity
-    }))
-  }, {
-    headers: {
-      Authorization: `Bearer ${token}`
+
+  const response = await axios.post(
+    'http://10.0.2.2:4001/carts',
+    {
+      products: state.cart.items.map(item => ({
+        product: {
+          id: item.product.id,
+          title: item.product.title,
+          price: item.product.price,
+          image: item.product.image,
+          description: item.product.description || "",
+          category: item.product.category || "",
+        },
+        quantity: item.quantity,
+      })),
+    },
+    {
+      headers: { Authorization: `Bearer ${token}` },
     }
-  });
-  
+  );
+
   return response.data;
 });
 
+// Slice
 const cartSlice = createSlice({
   name: "cart",
   initialState,
@@ -72,14 +95,14 @@ const cartSlice = createSlice({
       const existingIndex = state.items.findIndex(
         item => item.product.id === action.payload.id
       );
-      
+
       if (existingIndex >= 0) {
         state.items[existingIndex].quantity += 1;
       } else {
         state.items.push({
-          id: Date.now().toString(), // Temporary unique ID
+          id: Date.now().toString(),
           product: action.payload,
-          quantity: 1
+          quantity: 1,
         });
       }
     },
@@ -109,22 +132,43 @@ const cartSlice = createSlice({
       .addCase(fetchCart.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.items = action.payload.products.map((item: any) => ({
-          id: item.productId, // Use the productId as the cart item ID
+          id: item.productId,
           product: {
             id: item.productId,
             title: item.title,
             price: item.price,
             image: item.image,
             description: item.description || "",
-            category: item.category || ""
+            category: item.category || "",
           },
-          quantity: item.quantity
+          quantity: item.quantity,
         }));
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message || 'Failed to fetch cart';
       })
+
+      .addCase(updateCartItem.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.items = action.payload.products.map((item: any) => ({
+          id: item.product.id.toString(),
+          product: {
+            id: item.product.id,
+            title: item.product.title,
+            price: item.product.price,
+            image: item.product.image,
+            description: item.product.description || "",
+            category: item.product.category || "",
+          },
+          quantity: item.quantity,
+        }));
+      })
+      .addCase(updateCartItem.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Failed to update item quantity';
+      })
+
       .addCase(syncCart.pending, (state) => {
         state.status = 'loading';
       })
@@ -138,17 +182,24 @@ const cartSlice = createSlice({
             price: item.price,
             image: item.image,
             description: item.description || "",
-            category: item.category || ""
+            category: item.category || "",
           },
-          quantity: item.quantity
+          quantity: item.quantity,
         }));
       })
       .addCase(syncCart.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message || 'Failed to sync cart';
       });
-  }
+  },
 });
 
-export const { addToCart, incrementQuantity, decrementQuantity, clearCart } = cartSlice.actions;
+// Exports
+export const {
+  addToCart,
+  incrementQuantity,
+  decrementQuantity,
+  clearCart,
+} = cartSlice.actions;
+
 export default cartSlice.reducer;

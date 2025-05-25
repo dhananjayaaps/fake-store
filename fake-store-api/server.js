@@ -41,6 +41,28 @@ app.use('/carts', cartRoute);
 app.use('/users', userRoute);
 app.use('/auth', authRoute);
 
+// // Add this middleware right after your other middleware (after express.json())
+// app.use((req, res, next) => {
+//   const startTime = Date.now(); // Track request duration
+
+//   // Log the incoming request
+//   console.log('\n=== NEW REQUEST ===');
+//   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+//   console.log('Headers:', req.headers);
+//   console.log('Body:', req.body); // Requires express.json() middleware
+
+//   // Capture the original response function
+//   const originalSend = res.send;
+//   res.send = function (body) {
+//     const responseTime = Date.now() - startTime;
+//     console.log(`[Response] Status: ${res.statusCode} | Time: ${responseTime}ms`);
+//     console.log('Response Body:', body); // Log response data (careful with sensitive info)
+//     originalSend.call(this, body); // Call the original response function
+//   };
+
+//   next(); // Proceed to the next middleware/route
+// });
+
 // Mongoose connection
 mongoose
   .connect("mongodb+srv://dhananjayaaps:XmTbVMW9sHnoP9JV@cluster0.h2qns8o.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {

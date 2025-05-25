@@ -1,11 +1,10 @@
-// components/ProductDetail.tsx
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, syncCart } from "../../redux/slices/cartSlices";
-import type { AppDispatch } from "../../redux/store";
+import type { AppDispatch, RootState } from "../../redux/store";
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,7 +12,8 @@ export default function ProductDetail() {
   const [isAdding, setIsAdding] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const token = useSelector((state: any) => state.auth.token);
+  const token = useSelector((state: RootState) => state.auth.token);
+  const cartStatus = useSelector((state: RootState) => state.cart.status);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -22,6 +22,7 @@ export default function ProductDetail() {
         setProduct(response.data);
       } catch (error) {
         console.error("Error fetching product:", error);
+        Alert.alert("Error", "Failed to load product details");
       }
     };
     fetchProduct();
@@ -32,6 +33,7 @@ export default function ProductDetail() {
 
     setIsAdding(true);
     try {
+      // First add to local Redux store
       dispatch(addToCart({
         id: product.id,
         title: product.title,
@@ -41,18 +43,26 @@ export default function ProductDetail() {
         category: product.category
       }));
 
-      // Sync with server
-      await dispatch(syncCart()).unwrap();
+      // Then sync with server
+      const result = await dispatch(syncCart()).unwrap();
+      
+      if (result) {
+        Alert.alert("Success", "Product added to cart!");
+      }
     } catch (error) {
       console.error("Error adding to cart:", error);
-      Alert.alert("Error", "Failed to add item to cart");
+      Alert.alert("Error", "Failed to add item to cart. Please try again.");
     } finally {
       setIsAdding(false);
     }
   };
 
   if (!product) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color="#07689c" />;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#07689c" />
+      </View>
+    );
   }
 
   return (
@@ -67,15 +77,19 @@ export default function ProductDetail() {
       </View>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+          disabled={isAdding}
+        >
           <Text style={styles.buttonText}>← Back</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.cartButton}
+          style={[styles.cartButton, (isAdding || cartStatus === 'loading') && styles.disabledButton]}
           onPress={handleAddToCart}
-          disabled={isAdding}
+          disabled={isAdding || cartStatus === 'loading'}
         >
-          {isAdding ? (
+          {isAdding || cartStatus === 'loading' ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>🛒 Add to Cart</Text>
@@ -91,90 +105,88 @@ export default function ProductDetail() {
   );
 }
 
-// Keep your existing styles...
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    alignItems: "center",
-    backgroundColor: "#f4faff",
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
-    width: 250,
-    height: 250,
-    resizeMode: "contain",
-    borderRadius: 12,
-    borderColor: "#e0e0e0",
-    borderWidth: 1,
-    backgroundColor: "#fff",
+    width: '100%',
+    height: 300,
+    resizeMode: 'contain',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 12,
-    textAlign: "center",
-    color: "#333",
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
   },
   infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginVertical: 8,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
   },
   tag: {
-    backgroundColor: "#dff6ff",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    fontWeight: "bold",
-    fontSize: 14,
-    color: "#07689c",
+    fontSize: 16,
+    color: '#555',
   },
   price: {
-    backgroundColor: "#07689c",
-    color: "white",
+    color: '#07689c',
+    fontWeight: 'bold',
   },
   buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 16,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
   backButton: {
-    backgroundColor: "#b0bec5",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    backgroundColor: '#6c757d',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 10,
+    alignItems: 'center',
   },
   cartButton: {
-    backgroundColor: "#07689c",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    backgroundColor: '#07689c',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 10,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   buttonText: {
-    fontWeight: "bold",
-    color: "#fff",
-    fontSize: 14,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   descriptionTitle: {
-    marginTop: 20,
-    fontWeight: "bold",
-    fontSize: 16,
-    alignSelf: "flex-start",
-    paddingLeft: 16,
-    color: "#333",
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
   },
   descriptionBox: {
-    marginTop: 8,
-    backgroundColor: "#e3f2fd",
-    padding: 14,
+    backgroundColor: '#fff',
     borderRadius: 10,
-    width: "100%",
+    padding: 15,
+    marginBottom: 20,
   },
   description: {
-    fontSize: 14,
-    color: "#444",
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#555',
   },
 });

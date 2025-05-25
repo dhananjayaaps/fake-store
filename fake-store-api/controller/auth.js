@@ -38,3 +38,14 @@ module.exports.login = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// verifyToken
+module.exports.verifyToken = (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  return res.status(200).json({ valid : true});
+}

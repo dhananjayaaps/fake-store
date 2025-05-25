@@ -4,7 +4,7 @@ import { RootState, AppDispatch } from "../../redux/store";
 import { incrementQuantity, decrementQuantity, clearCart } from "../../redux/slices/cartSlices";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { addOrder } from "../../redux/slices/orderSlice";
-import { fetchCart } from "../../redux/slices/cartSlices";
+import { fetchCart, updateCartItem } from "../../redux/slices/cartSlices";
 import { useEffect } from "react";
 
 export default function CartScreen() {
@@ -28,8 +28,43 @@ export default function CartScreen() {
             image: string;
         };
     };
-    
-        const renderItem = ({ item }: { item: CartItem }) => (
+
+    const handleIncrement = async (itemId: string) => {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        try {
+            await dispatch(updateCartItem({
+                itemId,
+                quantity: item.quantity + 1
+            })).unwrap();
+        } catch (error) {
+            console.error("Failed to update quantity:", error);
+        }
+    };
+
+    const handleDecrement = async (itemId: string) => {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        const newQuantity = item.quantity > 1 ? item.quantity - 1 : 1;
+        
+        try {
+            await dispatch(updateCartItem({
+                itemId,
+                quantity: newQuantity
+            })).unwrap();
+            
+            if (newQuantity === 1 && item.quantity === 1) {
+                // Item will be removed by the backend if quantity reaches 0
+                dispatch(fetchCart());
+            }
+        } catch (error) {
+            console.error("Failed to update quantity:", error);
+        }
+    };
+
+    const renderItem = ({ item }: { item: CartItem }) => (
         <View style={styles.card}>
             <Image source={{ uri: item.product.image }} style={styles.image} />
             <View style={styles.info}>
@@ -37,41 +72,34 @@ export default function CartScreen() {
                 <Text style={styles.price}>${(item.product.price * item.quantity).toFixed(2)}</Text>
                 <View style={styles.controls}>
                     <TouchableOpacity 
-                        onPress={() => dispatch(decrementQuantity(item.id))} 
+                        onPress={() => handleDecrement(item.id)} 
                         style={styles.btn}
+                        disabled={status === 'loading'}
                     >
                         <Text style={styles.btnText}>-</Text>
                     </TouchableOpacity>
                     <Text style={styles.qty}>Quantity: {item.quantity}</Text>
                     <TouchableOpacity 
-                        onPress={() => dispatch(incrementQuantity(item.id))} 
+                        onPress={() => handleIncrement(item.id)} 
                         style={styles.btn}
+                        disabled={status === 'loading'}
                     >
                         <Text style={styles.btnText}>+</Text>
                     </TouchableOpacity>
                 </View>
             </View>
+            {status === 'loading' && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="small" color="#07689c" />
+                </View>
+            )}
         </View>
     );
 
-    if (status === 'loading') {
+    if (status === 'loading' && items.length === 0) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#07689c" />
-            </View>
-        );
-    }
-
-    if (error) {
-        return (
-            <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-                <TouchableOpacity 
-                    onPress={() => dispatch(fetchCart())}
-                    style={styles.retryButton}
-                >
-                    <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
             </View>
         );
     }
@@ -98,16 +126,32 @@ export default function CartScreen() {
                 <>
                     <View style={{ height: 1, backgroundColor: "#e0e0e0", marginVertical: 16 }} />
                     <TouchableOpacity
-                        style={styles.checkoutbtn}
-                        onPress={() => {
-                            dispatch(addOrder({ items: items.map(item => ({ ...item.product, quantity: item.quantity })) }));
-                            dispatch(clearCart());
-                            alert("Order placed successfully!");
+                        style={[styles.checkoutbtn, status === 'loading' && styles.disabledButton]}
+                        onPress={async () => {
+                            try {
+                                await dispatch(addOrder({ 
+                                    items: items.map(item => ({ 
+                                        ...item.product, 
+                                        id: String(item.product.id),
+                                        quantity: item.quantity 
+                                    })) 
+                                }));
+                                dispatch(clearCart());
+                                alert("Order placed successfully!");
+                            } catch (error) {
+                                console.error("Order failed:", error);
+                                alert("Failed to place order");
+                            }
                         }}
+                        disabled={status === 'loading'}
                     >
-                        <Text style={{ color: "#fff", textAlign: "center", fontSize: 18 }}>
-                            Checkout
-                        </Text>
+                        {status === 'loading' ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={{ color: "#fff", textAlign: "center", fontSize: 18 }}>
+                                Checkout
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </>
             )}
@@ -125,6 +169,16 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.7)'
     },
     errorContainer: {
         flex: 1,
@@ -240,5 +294,8 @@ const styles = StyleSheet.create({
         width: "50%",
         marginTop: 5,
         alignSelf: "center",
+    },
+    disabledButton: {
+        opacity: 0.6,
     },
 });
