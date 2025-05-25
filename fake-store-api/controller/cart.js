@@ -4,7 +4,7 @@ const Product = require('../model/product');
 // Helper function to get user's cart or create if doesn't exist
 const getOrCreateUserCart = async (userId) => {
   let cart = await Cart.findOne({ userId });
-  
+
   if (!cart) {
     cart = new Cart({
       userId,
@@ -12,20 +12,20 @@ const getOrCreateUserCart = async (userId) => {
     });
     await cart.save();
   }
-  
+
   return cart;
 };
 
 exports.getUserCart = async (req, res) => {
   try {
     const cart = await getOrCreateUserCart(req.id);
-    
+
     // Populate product details
     const populatedCart = await Cart.populate(cart, {
       path: 'products.productId',
       select: 'title price image'
     });
-    
+
     res.json({
       id: cart.userId,
       userId: cart.userId,
@@ -47,9 +47,9 @@ exports.getUserCart = async (req, res) => {
 // Helper function to create or update product
 const upsertProduct = async (productData) => {
   const { id, title, price, image, description, category } = productData;
-  
+
   return await Product.findOneAndUpdate(
-    { id },
+    { _id: id },
     { title, price, image, description, category },
     { upsert: true, new: true }
   );
@@ -58,7 +58,9 @@ const upsertProduct = async (productData) => {
 exports.updateCart = async (req, res) => {
   try {
     const { products } = req.body;
-    
+
+    console.log('Received products:', products);
+
     if (!Array.isArray(products)) {
       return res.status(400).json({ message: 'Products must be an array' });
     }
@@ -72,23 +74,23 @@ exports.updateCart = async (req, res) => {
 
       // Create or update the product
       const product = await upsertProduct(item.product);
-      
+
       processedProducts.push({
         productId: product._id,
         quantity: item.quantity
       });
     }
 
-	// Fetch the user details from database
-	if (!req.id) {
-	  return res.status(401).json({ message: 'Unauthorized' });
-	}
+    // Fetch the user details from database
+    if (!req.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
 
     // Update the cart
     const cart = await Cart.findOneAndUpdate(
       { userId: req.id },
-      { 
+      {
         products: processedProducts,
         date: new Date()
       },
@@ -128,10 +130,10 @@ exports.updateCartItemQuantity = async (req, res) => {
   try {
     const { quantity } = req.body;
     const { productId } = req.params;
-    
+
     if (!productId || quantity === undefined || quantity < 0) {
-      return res.status(400).json({ 
-        message: 'productId and valid quantity are required' 
+      return res.status(400).json({
+        message: 'productId and valid quantity are required'
       });
     }
 
@@ -153,7 +155,7 @@ exports.updateCartItemQuantity = async (req, res) => {
     // Update the quantity
     cart.products[productIndex].quantity = quantity;
     cart.date = new Date();
-    
+
     await cart.save();
 
     // Populate product details for response

@@ -56,14 +56,14 @@ export default function OrdersScreen() {
     }
   };
 
-  const renderOrder = ({ item }: { item: any }) => {
+ const renderOrder = ({ item }: { item: any }) => {
     const isExpanded = expandedOrders[item._id];
 
     return (
       <View style={styles.card}>
         <TouchableOpacity onPress={() => toggleExpand(item._id)} style={styles.header}>
           <View>
-            <Text style={styles.orderId}>Order #{item._id.slice(-6).toUpperCase()}</Text>
+            <Text style={styles.orderId}>Order #{item._id ? item._id.slice(-6).toUpperCase() : 'N/A'}</Text>
             <Text style={styles.meta}>
               {item.items.length} items • ${item.total.toFixed(2)}
             </Text>
@@ -90,7 +90,7 @@ export default function OrdersScreen() {
         {isExpanded && (
           <View style={styles.details}>
             {item.items.map((product: any) => (
-              <View key={`${item.id}-${product.id}`} style={styles.itemRow}>
+              <View key={`${item._id}-${product._id}`} style={styles.itemRow}>
                 <Image
                   source={{ uri: product.image }}
                   style={styles.image}

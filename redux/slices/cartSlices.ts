@@ -48,10 +48,11 @@ export const updateCartItem = createAsyncThunk(
     const item = state.cart.items.find(i => i.id === itemId);
 
     if (!item) throw new Error('Item not found in cart');
+    console.log(`Updating item ${item.product.id} with quantity ${quantity}`);
 
     const response = await axios.put(
       `http://10.0.2.2:4001/carts/items/${item.product.id}`,
-      { quantity },
+      { quantity }, // Only send quantity in body
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -62,6 +63,7 @@ export const updateCartItem = createAsyncThunk(
 export const syncCart = createAsyncThunk('cart/syncCart', async (_, { getState }) => {
   const state = getState() as { cart: CartState };
   const token = await AsyncStorage.getItem("userToken");
+  console.log("Syncing cart with items:", state.cart.items);
 
   const response = await axios.post(
     'http://10.0.2.2:4001/carts',
