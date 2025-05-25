@@ -1,11 +1,10 @@
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "../../redux/store";
-import { incrementQuantity, decrementQuantity, clearCart } from "../../redux/slices/cartSlices";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { addOrder } from "../../redux/slices/orderSlice";
-import { fetchCart, updateCartItem } from "../../redux/slices/cartSlices";
 import { useEffect } from "react";
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch, useSelector } from "react-redux";
+import { clearCart, fetchCart, updateCartItem } from "../../redux/slices/cartSlices";
+import { createOrder } from "../../redux/slices/orderSlice";
+import { AppDispatch, RootState } from "../../redux/store";
 
 export default function CartScreen() {
     const dispatch = useDispatch<AppDispatch>();
@@ -32,7 +31,7 @@ export default function CartScreen() {
     const handleIncrement = async (itemId: string) => {
         const item = items.find(i => i.id === itemId);
         if (!item) return;
-        
+
         try {
             await dispatch(updateCartItem({
                 itemId,
@@ -46,15 +45,15 @@ export default function CartScreen() {
     const handleDecrement = async (itemId: string) => {
         const item = items.find(i => i.id === itemId);
         if (!item) return;
-        
+
         const newQuantity = item.quantity > 1 ? item.quantity - 1 : 1;
-        
+
         try {
             await dispatch(updateCartItem({
                 itemId,
                 quantity: newQuantity
             })).unwrap();
-            
+
             if (newQuantity === 1 && item.quantity === 1) {
                 // Item will be removed by the backend if quantity reaches 0
                 dispatch(fetchCart());
@@ -71,16 +70,16 @@ export default function CartScreen() {
                 <Text numberOfLines={1} style={styles.subtitle}>{item.product.title}</Text>
                 <Text style={styles.price}>${(item.product.price * item.quantity).toFixed(2)}</Text>
                 <View style={styles.controls}>
-                    <TouchableOpacity 
-                        onPress={() => handleDecrement(item.id)} 
+                    <TouchableOpacity
+                        onPress={() => handleDecrement(item.id)}
                         style={styles.btn}
                         disabled={status === 'loading'}
                     >
                         <Text style={styles.btnText}>-</Text>
                     </TouchableOpacity>
                     <Text style={styles.qty}>Quantity: {item.quantity}</Text>
-                    <TouchableOpacity 
-                        onPress={() => handleIncrement(item.id)} 
+                    <TouchableOpacity
+                        onPress={() => handleIncrement(item.id)}
                         style={styles.btn}
                         disabled={status === 'loading'}
                     >
@@ -129,13 +128,12 @@ export default function CartScreen() {
                         style={[styles.checkoutbtn, status === 'loading' && styles.disabledButton]}
                         onPress={async () => {
                             try {
-                                await dispatch(addOrder({ 
-                                    items: items.map(item => ({ 
-                                        ...item.product, 
-                                        id: String(item.product.id),
-                                        quantity: item.quantity 
-                                    })) 
-                                }));
+                                await dispatch(createOrder(items.map(item => ({
+                                    ...item.product,
+                                    _id: String(item.product.id),
+                                    quantity: item.quantity
+                                }))));
+
                                 dispatch(clearCart());
                                 alert("Order placed successfully!");
                             } catch (error) {
@@ -143,6 +141,7 @@ export default function CartScreen() {
                                 alert("Failed to place order");
                             }
                         }}
+
                         disabled={status === 'loading'}
                     >
                         {status === 'loading' ? (
