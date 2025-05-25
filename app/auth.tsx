@@ -1,16 +1,20 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { setAuthenticated } from "../redux/slices/authSlice";
-import { useRouter } from "expo-router";
+
+const API_BASE_URL = "http://10.0.2.2:4001";
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -27,6 +31,58 @@ export default function AuthScreen() {
     setPassword("");
   };
 
+  const storeToken = async (token: string) => {
+    try {
+      await AsyncStorage.setItem("userToken", token);
+    } catch (error) {
+      console.error("Error storing token:", error);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email,
+        password,
+      });
+      
+      const { token } = response.data;
+      await storeToken(token);
+      dispatch(setAuthenticated(true));
+      router.replace("/(tabs)/profile");
+    } catch (error: any) {
+      if (error.response) {
+        alert(error.response.data.message || "Login failed. Please try again.");
+      } else if (error.request) {
+        alert("Network error. Please check your connection.");
+      } else {
+        alert("An error occurred. Please try again.");
+      }
+    }
+  };
+
+  const handleSignUp = async () => {
+    try {
+      await axios.post(`${API_BASE_URL}/users`, {
+        name,
+        email,
+        password,
+      });
+      
+      // After successful signup, toggle to the sign in
+      setIsSignUp(false);
+      alert("Signup successful! Please sign in.");
+    } catch (error: any) {
+      if (error.response) {
+        alert(error.response.data.message || "Signup failed. Please try again.");
+      } else if (error.request) {
+        alert("Network error. Please check your connection.");
+      } else {
+        alert("An error occurred. Please try again.");
+      }
+    }
+  };
+
   const validateAndSubmit = async () => {
     if (!email || !password || (isSignUp && !name)) {
       alert("Please fill all required fields.");
@@ -35,25 +91,18 @@ export default function AuthScreen() {
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      if (email === "fail@test.com") {
-        throw new Error("Server validation failed.");
+      if (isSignUp) {
+        await handleSignUp();
+      } else {
+        await handleLogin();
       }
-
-      dispatch(setAuthenticated(true));
-      router.replace("/(tabs)/profile");
-
-    } catch (err: any) {
-      alert(err.message || "Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignInLater = () => {
-    // Optional: You can dispatch an unauthenticated state or guest mode
-    dispatch(setAuthenticated(false)); // Optional if your logic supports it
+    dispatch(setAuthenticated(false));
     router.replace("/(tabs)");
   };
 
@@ -111,7 +160,6 @@ export default function AuthScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* 👇 New Sign In Later button */}
       <TouchableOpacity style={styles.skipButton} onPress={handleSignInLater}>
         <Text style={styles.skipText}>Sign In Later</Text>
       </TouchableOpacity>
