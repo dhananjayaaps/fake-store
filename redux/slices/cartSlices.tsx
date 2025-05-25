@@ -125,74 +125,73 @@ const cartSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(fetchCart.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchCart.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.items = action.payload.products.map((item: any) => ({
-          id: item.productId,
-          product: {
-            id: item.productId,
-            title: item.title,
-            price: item.price,
-            image: item.image,
-            description: item.description || "",
-            category: item.category || "",
-          },
-          quantity: item.quantity,
-        }));
-      })
-      .addCase(fetchCart.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message || 'Failed to fetch cart';
-      })
+  builder
+    .addCase(fetchCart.pending, (state) => {
+      state.status = 'loading';
+    })
+    .addCase(fetchCart.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.items = action.payload.products.map((item: any) => ({
+        id: item.id || item.productId, // Fix: fallback to `id` if available
+        product: {
+          id: item.product?.id ?? item.productId,
+          title: item.product?.title ?? item.title,
+          price: item.product?.price ?? item.price,
+          image: item.product?.image ?? item.image,
+          description: item.product?.description ?? item.description ?? "",
+          category: item.product?.category ?? item.category ?? "",
+        },
+        quantity: item.quantity,
+      }));
+    })
+    .addCase(fetchCart.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to fetch cart';
+    })
 
-      .addCase(updateCartItem.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.items = action.payload.products.map((item: any) => ({
-          id: item.product.id.toString(),
-          product: {
-            id: item.product.id,
-            title: item.product.title,
-            price: item.product.price,
-            image: item.product.image,
-            description: item.product.description || "",
-            category: item.product.category || "",
-          },
-          quantity: item.quantity,
-        }));
-      })
-      .addCase(updateCartItem.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message || 'Failed to update item quantity';
-      })
+    .addCase(updateCartItem.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.items = action.payload.products.map((item: any) => ({
+        id: item.id || item.productId,
+        product: {
+          id: item.product?.id ?? item.productId,
+          title: item.product?.title ?? item.title,
+          price: item.product?.price ?? item.price,
+          image: item.product?.image ?? item.image,
+          description: item.product?.description ?? item.description ?? "",
+          category: item.product?.category ?? item.category ?? "",
+        },
+        quantity: item.quantity,
+      }));
+    })
+    .addCase(updateCartItem.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to update item quantity';
+    })
 
-      .addCase(syncCart.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(syncCart.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.items = action.payload.products.map((item: any) => ({
-          id: item.productId,
-          product: {
-            id: item.productId,
-            title: item.title,
-            price: item.price,
-            image: item.image,
-            description: item.description || "",
-            category: item.category || "",
-          },
-          quantity: item.quantity,
-        }));
-      })
-      .addCase(syncCart.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message || 'Failed to sync cart';
-      });
-  },
-});
+    .addCase(syncCart.pending, (state) => {
+      state.status = 'loading';
+    })
+    .addCase(syncCart.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.items = action.payload.products.map((item: any) => ({
+        id: item.id || item.productId,
+        product: {
+          id: item.product?.id ?? item.productId,
+          title: item.product?.title ?? item.title,
+          price: item.product?.price ?? item.price,
+          image: item.product?.image ?? item.image,
+          description: item.product?.description ?? item.description ?? "",
+          category: item.product?.category ?? item.category ?? "",
+        },
+        quantity: item.quantity,
+      }));
+    })
+    .addCase(syncCart.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to sync cart';
+    });
+}});
 
 // Exports
 export const {

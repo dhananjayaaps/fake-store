@@ -102,40 +102,34 @@ module.exports.getUserProfile = async (req, res) => {
 };
 
 module.exports.editUser = async (req, res) => {
-    const userId = req.id; // ✅ Get from JWT decoded payload
-
-    if (!userId) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'User ID is missing from request',
-        });
-    }
+    const userId = req.id; // From JWT token (this is the MongoDB _id)
 
     try {
+        // Check if user exists using _id
         const user = await User.findOne({ _id: userId });
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
+        // Prepare updated data
         const updatedData = {
             email: req.body.email || user.email,
             name: req.body.name || user.name,
         };
 
+        // Hash new password if provided
         if (req.body.password) {
             updatedData.password = await bcrypt.hash(req.body.password, 10);
         }
 
+        // Update user by _id and return updated document
         const updatedUser = await User.findOneAndUpdate(
-            { id: userId },
+            { _id: userId }, // Correct query to use _id
             updatedData,
-            { new: true } // Returns updated document
-        ).select('-_id -__v'); // Clean response
+            { new: true }
+        ).select('-_id -__v'); // Exclude MongoDB-specific fields
 
         res.json(updatedUser);
     } catch (err) {
-        console.error('Error updating user:', err);
+        console.error('Update error:', err);
         res.status(500).json({ message: 'Error updating user', error: err });
     }
 };
