@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const SECRET = process.env.JWT_SECRET || 'your-secret'; // Use env vars in production
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -9,14 +10,8 @@ module.exports = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-
-    if (!req.params.id) {
-      req.params.id = decoded.id;
-    }
-
-    req.user = decoded;
-
+    const decoded = jwt.verify(token, SECRET); // VERIFICATION!
+    req.id = decoded.userId;
     next();
   } catch (err) {
     return res.status(403).json({ message: 'Invalid or expired token' });

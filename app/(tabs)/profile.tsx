@@ -1,27 +1,77 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, Alert, ActivityIndicator  } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "expo-router";
-import { setAuthenticated } from "../../redux/slices/authSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setAuthenticated, setUser } from "../../redux/slices/authSlice";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
-  // Get user data from Redux store (replace with your actual selector)
-  const user = useSelector((state: any) => state.auth.user) || {
-    name: "John Doe",
-    email: "john@example.com",
-  };
+  // Get user data from Redux store
+  const user = useSelector((state: any) => state.auth.user);
+  const [token, setToken] = useState<string | null>(null);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [updatedName, setUpdatedName] = useState(user.name);
-  const [currentPassword, setCurrentPassword] = useState("");
+  const [updatedName, setUpdatedName] = useState(user?.name || "");
+  const [updatedEmail, setUpdatedEmail] = useState(user?.email || "");
   const [newPassword, setNewPassword] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignOut = () => {
-    dispatch(setAuthenticated(false));
-    router.replace("/auth");
+  // Get token from AsyncStorage on component mount
+  useEffect(() => {
+    const getToken = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("userToken");
+        setToken(storedToken);
+        if (storedToken) {
+          fetchUserProfile(storedToken);
+        }
+      } catch (error) {
+        console.error("Error retrieving token:", error);
+      }
+    };
+    getToken();
+  }, []);
+
+  // Fetch user profile data
+  const fetchUserProfile = async (authToken: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://10.0.2.2:4001/users/profile", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch profile data");
+      }
+
+      const data = await response.json();
+      dispatch(setUser(data));
+      setUpdatedName(data.name);
+      setUpdatedEmail(data.email);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch profile data");
+      console.error("Profile fetch error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      // Remove token from AsyncStorage
+      await AsyncStorage.removeItem("userToken");
+      dispatch(setAuthenticated(false));
+      router.replace("/auth");
+    } catch (error) {
+      console.error("Error during sign out:", error);
+    }
   };
 
   const handleUpdate = () => {
@@ -29,26 +79,50 @@ export default function ProfileScreen() {
   };
 
   const handleConfirmUpdate = async () => {
-    if (!updatedName || !currentPassword) {
+    if (!token) {
+      Alert.alert("Error", "Authentication token not found");
+      return;
+    }
+
+    if (!updatedName || !updatedEmail) {
       Alert.alert("Validation Error", "Please fill all required fields");
       return;
     }
 
     setIsUpdating(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Fake check (replace with real API logic)
-      if (currentPassword === "wrongpassword") {
-        throw new Error("Current password is incorrect");
+      const updateData: any = {
+        name: updatedName,
+        email: updatedEmail,
+      };
+
+      if (newPassword) {
+        updateData.newPassword = newPassword;
       }
 
-      // In a real app, you would dispatch an action to update the user data
+      const response = await fetch("http://10.0.2.2:4001/users/profile", {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+
+      const updatedUser = await response.json();
+      dispatch(setUser(updatedUser));
+      
       Alert.alert("Success", "Profile updated successfully");
       setIsModalVisible(false);
+      setNewPassword("");
     } catch (error: any) {
       Alert.alert("Update Failed", error.message || "Failed to update profile");
+      console.error("Update error:", error);
     } finally {
       setIsUpdating(false);
     }
@@ -56,10 +130,18 @@ export default function ProfileScreen() {
 
   const handleCancelUpdate = () => {
     setIsModalVisible(false);
-    setUpdatedName(user.name);
-    setCurrentPassword("");
+    setUpdatedName(user?.name || "");
+    setUpdatedEmail(user?.email || "");
     setNewPassword("");
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -68,11 +150,11 @@ export default function ProfileScreen() {
       <View style={styles.profileInfo}>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Name:</Text>
-          <Text style={styles.value}>{user.name}</Text>
+          <Text style={styles.value}>{user?.name || "N/A"}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>{user.email}</Text>
+          <Text style={styles.value}>{user?.email || "N/A"}</Text>
         </View>
       </View>
 
@@ -106,10 +188,11 @@ export default function ProfileScreen() {
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Current Password"
-              secureTextEntry
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
+              placeholder="Email"
+              value={updatedEmail}
+              onChangeText={setUpdatedEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
               placeholderTextColor="#888"
             />
 
@@ -152,69 +235,76 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 16,
-    backgroundColor: "#f4faff",
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginVertical: 20,
+    marginBottom: 20,
     textAlign: "center",
     color: "#333",
   },
   profileInfo: {
     backgroundColor: "#fff",
     borderRadius: 10,
-    padding: 16,
+    padding: 20,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 15,
   },
   label: {
     fontSize: 16,
+    fontWeight: "600",
     color: "#555",
-    fontWeight: "bold",
   },
   value: {
     fontSize: 16,
     color: "#333",
   },
   buttonContainer: {
-    width: "100%",
     marginTop: 20,
   },
   updateButton: {
-    backgroundColor: "#07689c",
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 12,
+    backgroundColor: "#4a90e2",
+    padding: 15,
+    borderRadius: 8,
     alignItems: "center",
+    marginBottom: 15,
   },
   signOutButton: {
-    backgroundColor: "#d32f2f",
-    padding: 14,
-    borderRadius: 10,
+    backgroundColor: "#e74c3c",
+    padding: 15,
+    borderRadius: 8,
     alignItems: "center",
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "90%",
     backgroundColor: "#fff",
+    width: "90%",
     borderRadius: 10,
     padding: 20,
   },
@@ -227,10 +317,10 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 8,
+    borderColor: "#ddd",
+    borderRadius: 6,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 15,
     fontSize: 16,
     backgroundColor: "#fff",
   },
@@ -240,19 +330,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cancelButton: {
-    backgroundColor: "#b0bec5",
+    backgroundColor: "#95a5a6",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
     alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: "#07689c",
+    backgroundColor: "#2ecc71",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
     alignItems: "center",
   },
 });

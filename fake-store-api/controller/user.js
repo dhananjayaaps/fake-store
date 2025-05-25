@@ -65,38 +65,6 @@ module.exports.addUser = async (req, res) => {
     }
 };
 
-
-module.exports.editUser = async (req, res) => {
-    const id = parseInt(req.params.id);
-
-    if (!req.body || !id) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'Missing data or ID',
-        });
-    }
-
-    try {
-        const updated = await User.findOneAndUpdate(
-            { id },
-            {
-                email: req.body.email,
-                password: req.body.password,
-                name: req.body.name
-            },
-            { new: true }
-        );
-
-        if (!updated) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        res.json(updated);
-    } catch (err) {
-        res.status(500).json({ message: 'Error updating user', error: err });
-    }
-};
-
 module.exports.deleteUser = async (req, res) => {
     const id = parseInt(req.params.id);
 
@@ -117,5 +85,57 @@ module.exports.deleteUser = async (req, res) => {
         res.json({ message: 'User deleted', user: deletedUser });
     } catch (err) {
         res.status(500).json({ message: 'Error deleting user', error: err });
+    }
+};
+
+module.exports.getUserProfile = async (req, res) => {
+    const userId = req.id;
+
+    try {
+        const user = await User.findOne({ id: userId }).select('-_id -__v'); // Make sure `id` is the correct field
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err });
+    }
+};
+
+module.exports.editUser = async (req, res) => {
+    const userId = req.id; // ✅ Get from JWT decoded payload
+
+    if (!userId) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'User ID is missing from request',
+        });
+    }
+
+    try {
+        const user = await User.findOne({ id: userId });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const updatedData = {
+            email: req.body.email || user.email,
+            name: req.body.name || user.name,
+        };
+
+        if (req.body.password) {
+            updatedData.password = await bcrypt.hash(req.body.password, 10);
+        }
+
+        const updatedUser = await User.findOneAndUpdate(
+            { id: userId },
+            updatedData,
+            { new: true } // Returns updated document
+        ).select('-_id -__v'); // Clean response
+
+        res.json(updatedUser);
+    } catch (err) {
+        console.error('Error updating user:', err);
+        res.status(500).json({ message: 'Error updating user', error: err });
     }
 };
