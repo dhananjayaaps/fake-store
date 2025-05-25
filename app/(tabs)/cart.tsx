@@ -17,10 +17,10 @@ export default function CartScreen() {
   }, [dispatch]);
 
   useFocusEffect(
-  useCallback(() => {
-    dispatch(fetchCart());
-  }, [dispatch])
-);
+    useCallback(() => {
+      dispatch(fetchCart());
+    }, [dispatch])
+  );
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2);

@@ -14,6 +14,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserOrders, updateOrder } from "../../redux/slices/orderSlice";
 import { AppDispatch, RootState } from "../../redux/store";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 type OrderStatus = "new" | "paid" | "delivered" | "cancelled";
 
@@ -27,6 +29,12 @@ export default function OrdersScreen() {
   useEffect(() => {
     dispatch(fetchUserOrders());
   }, [dispatch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchUserOrders());
+    }, [dispatch])
+  );
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -56,7 +64,7 @@ export default function OrdersScreen() {
     }
   };
 
- const renderOrder = ({ item }: { item: any }) => {
+  const renderOrder = ({ item }: { item: any }) => {
     const isExpanded = expandedOrders[item._id];
 
     return (

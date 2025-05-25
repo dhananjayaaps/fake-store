@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -24,6 +24,18 @@ export default function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
+
+ useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("userToken");
+      if (token) {
+        dispatch(setAuthenticated(true));
+        router.replace("/(tabs)/profile");
+      }
+    };
+
+    checkToken();
+  }, []);
 
   const clearForm = () => {
     setName("");

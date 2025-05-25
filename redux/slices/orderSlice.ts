@@ -154,7 +154,9 @@ const ordersSlice = createSlice({
       .addCase(fetchUserOrders.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.items = action.payload;
+        state.newOrderCount = action.payload.filter((order: Order) => order.status === 'new').length;
       })
+
       .addCase(fetchUserOrders.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string || 'Failed to fetch orders';
@@ -166,10 +168,12 @@ const ordersSlice = createSlice({
       })
       .addCase(updateOrder.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        const index = state.items.findIndex(order => order._id === action.payload._id);
+        const updatedOrder = action.payload;
+        const index = state.items.findIndex(order => order._id === updatedOrder._id);
         if (index !== -1) {
-          state.items[index] = action.payload;
+          state.items[index] = updatedOrder;
         }
+        state.newOrderCount = state.items.filter(order => order.status === 'new').length;
       })
       .addCase(updateOrder.rejected, (state, action) => {
         state.status = 'failed';
