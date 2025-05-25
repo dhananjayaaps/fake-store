@@ -92,7 +92,7 @@ module.exports.getUserProfile = async (req, res) => {
     const userId = req.id;
 
     try {
-        const user = await User.findOne({ id: userId }).select('-_id -__v'); // Make sure `id` is the correct field
+        const user = await User.findOne({ _id: userId }).select('-_id -__v'); // Make sure `id` is the correct field
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         res.json(user);
@@ -112,7 +112,7 @@ module.exports.editUser = async (req, res) => {
     }
 
     try {
-        const user = await User.findOne({ id: userId });
+        const user = await User.findOne({ _id: userId });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });

@@ -1,29 +1,52 @@
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
+import { RootState, AppDispatch } from "../../redux/store";
 import { incrementQuantity, decrementQuantity, clearCart } from "../../redux/slices/cartSlices";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { addOrder } from "../../redux/slices/orderSlice";
+import { fetchCart } from "../../redux/slices/cartSlices";
+import { useEffect } from "react";
 
 export default function CartScreen() {
-    const dispatch = useDispatch();
-    const cartItems = useSelector((state: RootState) => state.cart.items);
+    const dispatch = useDispatch<AppDispatch>();
+    const { items, status, error } = useSelector((state: RootState) => state.cart);
 
-    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+    useEffect(() => {
+        dispatch(fetchCart());
+    }, [dispatch]);
 
-    const renderItem = ({ item }: any) => (
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2);
+
+    type CartItem = {
+        id: string;
+        quantity: number;
+        product: {
+            id: string | number;
+            title: string;
+            price: number;
+            image: string;
+        };
+    };
+    
+        const renderItem = ({ item }: { item: CartItem }) => (
         <View style={styles.card}>
-            <Image source={{ uri: item.image }} style={styles.image} />
+            <Image source={{ uri: item.product.image }} style={styles.image} />
             <View style={styles.info}>
-                <Text numberOfLines={1} style={styles.subtitle}>{item.title}</Text>
-                <Text style={styles.price}>${(item.price * item.quantity).toFixed(2)}</Text>
+                <Text numberOfLines={1} style={styles.subtitle}>{item.product.title}</Text>
+                <Text style={styles.price}>${(item.product.price * item.quantity).toFixed(2)}</Text>
                 <View style={styles.controls}>
-                    <TouchableOpacity onPress={() => dispatch(decrementQuantity(item.id))} style={styles.btn}>
+                    <TouchableOpacity 
+                        onPress={() => dispatch(decrementQuantity(item.id))} 
+                        style={styles.btn}
+                    >
                         <Text style={styles.btnText}>-</Text>
                     </TouchableOpacity>
                     <Text style={styles.qty}>Quantity: {item.quantity}</Text>
-                    <TouchableOpacity onPress={() => dispatch(incrementQuantity(item.id))} style={styles.btn}>
+                    <TouchableOpacity 
+                        onPress={() => dispatch(incrementQuantity(item.id))} 
+                        style={styles.btn}
+                    >
                         <Text style={styles.btnText}>+</Text>
                     </TouchableOpacity>
                 </View>
@@ -31,35 +54,63 @@ export default function CartScreen() {
         </View>
     );
 
+    if (status === 'loading') {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#07689c" />
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity 
+                    onPress={() => dispatch(fetchCart())}
+                    style={styles.retryButton}
+                >
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <Text style={styles.title}>Cart</Text>
             <View style={{ flex: 1, padding: 16 }}>
                 <Text style={styles.summary}>Items: {totalItems} | Total: ${totalPrice}</Text>
-                <FlatList
-                    data={cartItems}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={{ paddingVertical: 12 }}
-                />
+                {items.length === 0 ? (
+                    <View style={styles.emptyCart}>
+                        <Text style={styles.emptyCartText}>Your cart is empty</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={items}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.id}
+                        contentContainerStyle={{ paddingVertical: 12 }}
+                    />
+                )}
             </View>
-            <View style={{ height: 1, backgroundColor: "#e0e0e0", marginVertical: 16 }} />
-            <TouchableOpacity
-                style={styles.checkoutbtn}
-                onPress={() => {
-                    if (cartItems.length === 0) {
-                        alert("Your cart is empty.");
-                        return;
-                    }
-                    dispatch(addOrder({ items: cartItems }));
-                    dispatch(clearCart());
-                    alert("Order placed successfully!");
-                }}
-            >
-                <Text style={{ color: "#fff", textAlign: "center", fontSize: 18 }}>
-                    Checkout
-                </Text>
-            </TouchableOpacity>
+            {items.length > 0 && (
+                <>
+                    <View style={{ height: 1, backgroundColor: "#e0e0e0", marginVertical: 16 }} />
+                    <TouchableOpacity
+                        style={styles.checkoutbtn}
+                        onPress={() => {
+                            dispatch(addOrder({ items: items.map(item => ({ ...item.product, quantity: item.quantity })) }));
+                            dispatch(clearCart());
+                            alert("Order placed successfully!");
+                        }}
+                    >
+                        <Text style={{ color: "#fff", textAlign: "center", fontSize: 18 }}>
+                            Checkout
+                        </Text>
+                    </TouchableOpacity>
+                </>
+            )}
         </SafeAreaView>
     );
 }
@@ -69,6 +120,32 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: "#fff",
         flex: 1,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorText: {
+        color: '#ff0000',
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    retryButton: {
+        backgroundColor: '#07689c',
+        padding: 10,
+        borderRadius: 5,
+    },
+    retryButtonText: {
+        color: '#fff',
+        fontSize: 16,
     },
     title: {
         fontSize: 28,
@@ -87,6 +164,15 @@ const styles = StyleSheet.create({
         backgroundColor: "#42ecf5",
         borderRadius: 12,
         padding: 16,
+    },
+    emptyCart: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyCartText: {
+        fontSize: 18,
+        color: '#666',
     },
     card: {
         flexDirection: "row",
@@ -154,16 +240,5 @@ const styles = StyleSheet.create({
         width: "50%",
         marginTop: 5,
         alignSelf: "center",
-    },
-    topbox: {
-        backgroundColor: "#f9f9f9",
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-        elevation: 3,
     },
 });

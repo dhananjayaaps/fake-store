@@ -1,22 +1,59 @@
+// components/ProductDetail.tsx
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useDispatch } from "react-redux";
-import { addToCart } from "../../redux/slices/cartSlices"; // Adjust path if needed
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart, syncCart } from "../../redux/slices/cartSlices";
+import type { AppDispatch } from "../../redux/store";
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [product, setProduct] = useState<any>(null);
+  const [isAdding, setIsAdding] = useState(false);
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const token = useSelector((state: any) => state.auth.token);
 
   useEffect(() => {
-    axios.get(`https://fakestoreapi.com/products/${id}`).then((res) => setProduct(res.data));
-  }, []);
+    const fetchProduct = async () => {
+      try {
+        const response = await axios.get(`https://fakestoreapi.com/products/${id}`);
+        setProduct(response.data);
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      }
+    };
+    fetchProduct();
+  }, [id]);
 
-  if (!product)
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    setIsAdding(true);
+    try {
+      dispatch(addToCart({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.image,
+        description: product.description,
+        category: product.category
+      }));
+
+      // Sync with server
+      await dispatch(syncCart()).unwrap();
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      Alert.alert("Error", "Failed to add item to cart");
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  if (!product) {
     return <ActivityIndicator style={{ flex: 1 }} size="large" color="#07689c" />;
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -24,8 +61,8 @@ export default function ProductDetail() {
       <Text style={styles.title}>{product.title}</Text>
 
       <View style={styles.infoRow}>
-        <Text style={styles.tag}>⭐ {product.rating.rate}</Text>
-        <Text style={styles.tag}>📦 {product.rating.count}</Text>
+        <Text style={styles.tag}>⭐ {product.rating?.rate || 0}</Text>
+        <Text style={styles.tag}>📦 {product.rating?.count || 0}</Text>
         <Text style={[styles.tag, styles.price]}>💲{product.price}</Text>
       </View>
 
@@ -35,16 +72,14 @@ export default function ProductDetail() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.cartButton}
-          onPress={() => {
-            dispatch(addToCart({
-              id: product.id,
-              title: product.title,
-              price: product.price,
-              image: product.image,
-            }));
-          }}
+          onPress={handleAddToCart}
+          disabled={isAdding}
         >
-          <Text style={styles.buttonText}>🛒 Add to Cart</Text>
+          {isAdding ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>🛒 Add to Cart</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -56,6 +91,7 @@ export default function ProductDetail() {
   );
 }
 
+// Keep your existing styles...
 const styles = StyleSheet.create({
   container: {
     padding: 16,
