@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthenticated, setUser } from "../../redux/slices/authSlice";
 
+import { API_BASE_URL } from "../../app/auth"; // Adjust the import path as necessary
 export default function ProfileScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -25,6 +26,8 @@ export default function ProfileScreen() {
       try {
         const storedToken = await AsyncStorage.getItem("userToken");
         setToken(storedToken);
+        console.log("Stored token:", storedToken);
+        console.log("Token state:", token);
         if (storedToken) {
           fetchUserProfile(storedToken);
         }
@@ -39,7 +42,8 @@ export default function ProfileScreen() {
   const fetchUserProfile = async (authToken: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch("http://10.0.2.2:4001/users/profile", {
+        console.log(`${API_BASE_URL}/users/profile`)
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${authToken}`,
@@ -48,7 +52,8 @@ export default function ProfileScreen() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch profile data");
+        const errorData = await response.json();
+        throw new Error(errorData.message);
       }
 
       const data = await response.json();
@@ -100,7 +105,7 @@ export default function ProfileScreen() {
         updateData.newPassword = newPassword;
       }
 
-      const response = await fetch("http://10.0.2.2:4001/users/profile", {
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${token}`,

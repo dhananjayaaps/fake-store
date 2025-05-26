@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import {API_BASE_URL} from "@/app/auth";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -31,7 +32,7 @@ export const checkAuthStatus = createAsyncThunk(
       }
 
       // Verify token with your backend
-      const response = await axios.get('http://10.0.2.2:4001/auth/verify', {
+      const response = await axios.get(`${API_BASE_URL}/auth/verify`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -39,7 +40,7 @@ export const checkAuthStatus = createAsyncThunk(
 
       if (response.data.valid) {
         // Optionally get user data if needed
-        const userResponse = await axios.get('http://10.0.2.2:4001/users/profile', {
+        const userResponse = await axios.get(`${API_BASE_URL}/users/profile`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
+import {API_BASE_URL} from "@/app/auth";
 
 // Interfaces
 interface Product {
@@ -34,7 +35,7 @@ const initialState: CartState = {
 // Async Thunks
 export const fetchCart = createAsyncThunk('cart/fetchCart', async () => {
   const token = await AsyncStorage.getItem("userToken");
-  const response = await axios.get('http://10.0.2.2:4001/carts/user', {
+  const response = await axios.get(`${API_BASE_URL}/carts/user`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -50,7 +51,7 @@ export const updateCartItem = createAsyncThunk(
     if (!item) throw new Error('Item not found in cart');
 
     const response = await axios.put(
-      `http://10.0.2.2:4001/carts/items/${item.product.id}`,
+        `${API_BASE_URL}/carts/items/${item.product.id}`,
       { quantity },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -64,7 +65,7 @@ export const syncCart = createAsyncThunk('cart/syncCart', async (_, { getState }
   const token = await AsyncStorage.getItem("userToken");
 
   const response = await axios.post(
-    'http://10.0.2.2:4001/carts',
+    `${API_BASE_URL}/carts`,
     {
       products: state.cart.items.map(item => ({
         product: {

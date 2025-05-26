@@ -14,7 +14,7 @@ import {
 import { useDispatch } from "react-redux";
 import { setAuthenticated } from "../redux/slices/authSlice";
 
-const API_BASE_URL = "http://10.0.2.2:4001";
+export const API_BASE_URL = "http://192.168.8.102:4000";
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -29,6 +29,7 @@ export default function AuthScreen() {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem("userToken");
       if (token) {
+        console.log("Token found, navigating to profile"+token);
         dispatch(setAuthenticated(true));
         router.replace("/(tabs)/profile");
       }

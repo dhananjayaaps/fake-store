@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
+import {API_BASE_URL} from "@/app/auth";
 
 export type OrderStatus = "new" | "paid" | "delivered" | "cancelled";
 
@@ -42,7 +43,7 @@ export const createOrder = createAsyncThunk(
       const token = await AsyncStorage.getItem("userToken");
 
       const response = await axios.post(
-        'http://10.0.2.2:4001/orders',
+          `${API_BASE_URL}/orders`,
         {
           items: products,
         },
@@ -65,7 +66,7 @@ export const fetchUserOrders = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = await AsyncStorage.getItem("userToken");
-      const response = await axios.get('http://10.0.2.2:4001/orders', {
+      const response = await axios.get(`${API_BASE_URL}/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return response.data;
@@ -81,7 +82,7 @@ export const updateOrder = createAsyncThunk(
     try {
       const token = await AsyncStorage.getItem("userToken");
       const response = await axios.patch(
-        `http://10.0.2.2:4001/orders/${id}/status`,
+          `${API_BASE_URL}/orders/${id}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
